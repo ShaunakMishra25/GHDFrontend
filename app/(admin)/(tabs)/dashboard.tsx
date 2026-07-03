@@ -1,14 +1,13 @@
 import { useState, useCallback } from 'react'
 import { View, Text, ScrollView, RefreshControl, StyleSheet } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import orderService from '../../../services/order.service'
-import useRefreshOnFocus from '../../../hooks/useRefreshOnFocus'
+import { orderService } from '../../../services/order.service'
+import { useRefreshOnFocus } from '../../../hooks/useRefreshOnFocus'
 import StatCard from '../../../components/admin/StatCard'
 import OrderRow from '../../../components/admin/OrderRow'
-import SkeletonLoader from '../../../components/ui/SkeletonLoader'
-import { formatCurrency } from '../../../utils/formatCurrency'
-import { formatDate } from '../../../utils/formatDate'
-import type { DashboardData, OrderStatus } from '../../../types/api'
+import { SkeletonLoader } from '../../../components/ui/SkeletonLoader'
+import { formatCurrency, formatDate } from '../../../utils/formatCurrency'
+import type { DashboardStats, OrderStatus, OrderBrief } from '../../../types/api'
 
 const ORANGE = '#FF6B35'
 const BG = '#F5F5F5'
@@ -36,7 +35,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false)
 
-  const { data, isLoading, isError, refetch } = useQuery<DashboardData>({
+  const { data, isLoading, isError, refetch } = useQuery<DashboardStats>({
     queryKey: ['admin', 'dashboard'],
     queryFn: () => orderService.getDashboard(),
   })
@@ -48,6 +47,10 @@ export default function DashboardScreen() {
     await refetch()
     setRefreshing(false)
   }, [refetch])
+
+  const onStatusUpdate = useCallback((orderId: number, status: string) => {
+    // Status updates handled in order detail screen
+  }, [])
 
   if (isLoading) {
     return (
@@ -88,14 +91,14 @@ export default function DashboardScreen() {
     )
   }
 
-  const totalOrders = data.todayOrders
-  const totalRevenue = data.todayRevenue
-  const pendingOrders = data.pendingOrders
-  const totalUsers = data.totalUsers
-  const statusBreakdown = data.statusBreakdown || []
-  const recentOrders = (data.recentOrders || []).slice(0, 10)
+  const totalOrders = data.today_order_count
+  const totalRevenue = data.today_revenue
+  const pendingOrders = data.pending_order_count
+  const totalUsers = data.total_users
+  const statusBreakdown = Object.entries(data.status_counts || {}).map(([status, count]) => ({ status: status as OrderStatus, count }))
+  const recentOrders = (data.today_orders || []).slice(0, 10)
 
-  const maxStatusCount = Math.max(...statusBreakdown.map((s) => s.count), 1)
+  const maxStatusCount = Math.max(...statusBreakdown.map((s) => Number(s.count)), 1)
 
   return (
     <View style={styles.container}>
@@ -107,10 +110,10 @@ export default function DashboardScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ORANGE} />}
       >
         <View style={styles.statsRow}>
-          <StatCard label="Today Orders" value={String(totalOrders)} color={ORANGE} />
-          <StatCard label="Today Revenue" value={formatCurrency(totalRevenue)} color="#34C759" />
-          <StatCard label="Pending" value={String(pendingOrders)} color="#FF9500" />
-          <StatCard label="Total Users" value={String(totalUsers)} color="#007AFF" />
+          <StatCard title="Today Orders" value={String(totalOrders)} color={ORANGE} />
+          <StatCard title="Today Revenue" value={formatCurrency(totalRevenue)} color="#34C759" />
+          <StatCard title="Pending" value={String(pendingOrders)} color="#FF9500" />
+          <StatCard title="Total Users" value={String(totalUsers)} color="#007AFF" />
         </View>
 
         <View style={styles.section}>
@@ -128,12 +131,12 @@ export default function DashboardScreen() {
                       styles.breakdownBar,
                       {
                         backgroundColor: STATUS_COLORS[item.status] || GRAY,
-                        width: `${(item.count / maxStatusCount) * 100}%`,
+                        width: `${(Number(item.count) / maxStatusCount) * 100}%`,
                       },
                     ]}
                   />
                 </View>
-                <Text style={styles.breakdownCount}>{item.count}</Text>
+                <Text style={styles.breakdownCount}>{String(item.count)}</Text>
               </View>
             ))}
             {statusBreakdown.length === 0 && (
@@ -147,8 +150,8 @@ export default function DashboardScreen() {
           {recentOrders.length === 0 ? (
             <Text style={styles.emptyText}>No orders today</Text>
           ) : (
-            recentOrders.map((order) => (
-              <OrderRow key={order.id} order={order} />
+            recentOrders.map((order: OrderBrief) => (
+              <OrderRow key={order.id} order={order} onStatusUpdate={onStatusUpdate} />
             ))
           )}
         </View>

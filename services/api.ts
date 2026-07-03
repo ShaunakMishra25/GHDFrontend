@@ -24,9 +24,9 @@ api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError<ApiResponse<unknown>>) => {
     if (error.response?.status === 401) {
-      const refreshed = await useAuthStore.getState().refreshToken();
-      if (refreshed && error.config) {
-        error.config.headers.Authorization = `Bearer ${useAuthStore.getState().accessToken}`;
+      const refreshed = await useAuthStore.getState().refreshTokenAction();
+      if (refreshed && error.config?.headers) {
+        error.config.headers.Authorization = `Bearer ${useAuthStore.getState().accessToken ?? ''}`;
         return api.request(error.config);
       }
       useAuthStore.getState().logout();

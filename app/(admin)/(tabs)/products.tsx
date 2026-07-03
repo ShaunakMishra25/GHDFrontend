@@ -3,12 +3,12 @@ import { View, Text, TextInput, TouchableOpacity, RefreshControl, Alert, StyleSh
 import { FlashList } from '@shopify/flash-list'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
-import productService from '../../../services/product.service'
+import { productService } from '../../../services/product.service'
 import EmptyState from '../../../components/ui/EmptyState'
-import SkeletonLoader from '../../../components/ui/SkeletonLoader'
-import useRefreshOnFocus from '../../../hooks/useRefreshOnFocus'
+import { SkeletonLoader } from '../../../components/ui/SkeletonLoader'
+import { useRefreshOnFocus } from '../../../hooks/useRefreshOnFocus'
 import { formatCurrency } from '../../../utils/formatCurrency'
-import type { Product, ProductCategory } from '../../../types/api'
+import type { Product, Category } from '../../../types/api'
 
 const ORANGE = '#FF6B35'
 const BG = '#F5F5F5'
@@ -20,16 +20,16 @@ export default function ProductsScreen() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
-  const { data: categoriesData } = useQuery<{ categories: ProductCategory[] }>({
+  const { data: categoriesData } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => productService.getCategories(),
+    queryFn: () => productService.listCategories(),
   })
 
-  const { data, isLoading, isError, refetch } = useQuery<{ products: Product[] }>({
+  const { data, isLoading, isError, refetch } = useQuery<{ data: Product[]; total: number }>({
     queryKey: ['admin', 'products', selectedCategory],
     queryFn: () =>
-      productService.getProducts({
-        categoryId: selectedCategory || undefined,
+      productService.listProducts({
+        category_id: selectedCategory ? Number(selectedCategory) : undefined,
         search: search || undefined,
       }),
   })
@@ -37,20 +37,20 @@ export default function ProductsScreen() {
   useRefreshOnFocus(refetch)
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => productService.deleteProduct(id),
+    mutationFn: (id: number) => productService.deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] })
     },
   })
 
-  const categories = categoriesData?.categories ?? []
-  const products = data?.products ?? []
+  const categories = categoriesData ?? []
+  const products = data?.data ?? []
 
   const filteredProducts = search
     ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(search.toLowerCase()) ||
-          p.name_hi?.toLowerCase().includes(search.toLowerCase()),
+          (p: Product) =>
+          p.name_en.toLowerCase().includes(search.toLowerCase()) ||
+          (p.name_hi || '').toLowerCase().includes(search.toLowerCase()),
       )
     : products
 
@@ -69,7 +69,7 @@ export default function ProductsScreen() {
     (product: Product) => {
       Alert.alert(
         'Delete Product',
-        `Are you sure you want to delete "${product.name}"?`,
+        `Are you sure you want to delete "${product.name_en}"?`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -88,16 +88,16 @@ export default function ProductsScreen() {
   }, [])
 
   const renderCategoryChip = useCallback(
-    (category: { id: string; name: string }) => {
-      const isSelected = selectedCategory === category.id
+    (category: Category) => {
+      const isSelected = selectedCategory === String(category.id)
       return (
         <TouchableOpacity
           key={category.id}
           style={[styles.chip, isSelected && styles.chipSelected]}
-          onPress={() => onCategoryPress(category.id)}
+          onPress={() => onCategoryPress(String(category.id))}
         >
           <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-            {category.name}
+            {category.name_en}
           </Text>
         </TouchableOpacity>
       )
@@ -174,16 +174,16 @@ export default function ProductsScreen() {
                   </Text>
                 </TouchableOpacity>
               )
-              : renderCategoryChip(item as ProductCategory)
+              : renderCategoryChip(item as Category)
           }
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
           estimatedItemSize={80}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         />
       </View>
-      <FlashList
+      <FlashList<Product>
         data={filteredProducts}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -193,14 +193,14 @@ export default function ProductsScreen() {
             onLongPress={() => onDeleteProduct(item)}
           >
             <View style={styles.productInfo}>
-              <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productCategory}>{item.category_name}</Text>
+              <Text style={styles.productName}>{item.name_en}</Text>
+              <Text style={styles.productCategory}>{''}</Text>
               <View style={styles.productMeta}>
                 <Text style={styles.productPrice}>{formatCurrency(item.price)}</Text>
                 <Text style={styles.productUnit}>/{item.unit}</Text>
-                <View style={[styles.stockBadge, (item.stock ?? 0) > 0 ? styles.inStock : styles.outOfStock]}>
-                  <Text style={[styles.stockText, (item.stock ?? 0) > 0 ? styles.inStockText : styles.outOfStockText]}>
-                    {(item.stock ?? 0) > 0 ? `${item.stock} in stock` : 'Out of stock'}
+                <View style={[styles.stockBadge, item.stock_qty > 0 ? styles.inStock : styles.outOfStock]}>
+                  <Text style={[styles.stockText, item.stock_qty > 0 ? styles.inStockText : styles.outOfStockText]}>
+                    {item.stock_qty > 0 ? `${item.stock_qty} in stock` : 'Out of stock'}
                   </Text>
                 </View>
               </View>
@@ -210,11 +210,11 @@ export default function ProductsScreen() {
             </View>
           </TouchableOpacity>
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         estimatedItemSize={80}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <EmptyState message={search ? 'No products match your search' : 'No products yet'} />
+          <EmptyState icon="package-outline" title={search ? 'No results' : 'No products'} message={search ? 'No products match your search' : 'No products yet'} />
         }
         refreshControl={
           <RefreshControl refreshing={false} onRefresh={refetch} tintColor={ORANGE} />

@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { orderService } from '../../../services/order.service'
-import { ErrorBoundary } from '../../../components/ui/ErrorBoundary'
+import ErrorBoundary from '../../../components/ui/ErrorBoundary'
 import { SkeletonLoader } from '../../../components/ui/SkeletonLoader'
 import { useNetworkStatus } from '../../../hooks/useNetworkStatus'
 import { Address } from '../../../types/api'

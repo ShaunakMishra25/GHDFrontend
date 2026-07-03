@@ -4,10 +4,10 @@ import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { FlashList } from '@shopify/flash-list'
 import { productService } from '../../../services/product.service'
-import { ProductCard } from '../../../components/customer/ProductCard'
-import { CategoryCard } from '../../../components/customer/CategoryCard'
+import ProductCard from '../../../components/customer/ProductCard'
+import CategoryCard from '../../../components/customer/CategoryCard'
 import { SkeletonLoader } from '../../../components/ui/SkeletonLoader'
-import { ErrorBoundary } from '../../../components/ui/ErrorBoundary'
+import ErrorBoundary from '../../../components/ui/ErrorBoundary'
 import { useNetworkStatus } from '../../../hooks/useNetworkStatus'
 import { useRefreshOnFocus } from '../../../hooks/useRefreshOnFocus'
 import { Category, Product } from '../../../types/api'
@@ -21,13 +21,13 @@ export default function HomeScreen() {
   const [search, setSearch] = useState('')
   const [refreshing, setRefreshing] = useState(false)
 
-  const { data: categories, isLoading: catLoading } = useQuery({
+  const { data: categories, isLoading: catLoading } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: productService.listCategories,
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: productsData, isLoading: prodLoading, refetch } = useQuery({
+  const { data: productsData, isLoading: prodLoading, refetch } = useQuery<{ data: Product[]; total: number }>({
     queryKey: ['products', { limit: 20, offset: 0 }],
     queryFn: () => productService.listProducts({ limit: 20, offset: 0 }),
     staleTime: 5 * 60 * 1000,
@@ -73,7 +73,7 @@ export default function HomeScreen() {
       {catLoading ? (
         <SkeletonLoader count={4} />
       ) : (
-        <FlashList
+        <FlashList<Category>
           data={categories || []}
           renderItem={({ item }) => (
             <CategoryCard category={item} onPress={() => handleCategoryPress(item)} />
@@ -81,7 +81,7 @@ export default function HomeScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           estimatedItemSize={100}
-          keyExtractor={(item) => String(item.id)}
+          keyExtractor={(item: Category) => String(item.id)}
           contentContainerStyle={styles.categoriesList}
         />
       )}
@@ -108,11 +108,11 @@ export default function HomeScreen() {
   return (
     <ErrorBoundary>
       <View style={styles.container}>
-        <FlashList
+        <FlashList<Product>
           data={products}
           renderItem={({ item }) => (
             <View style={styles.cardWrapper}>
-              <ProductCard product={item} onPress={() => {}} />
+              <ProductCard product={item} onAddToCart={() => {}} />
             </View>
           )}
           keyExtractor={(item: Product) => String(item.id)}

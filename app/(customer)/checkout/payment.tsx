@@ -6,7 +6,7 @@ import { useCartStore } from '../../../store/cart.store'
 import { orderService } from '../../../services/order.service'
 import { useNetworkStatus } from '../../../hooks/useNetworkStatus'
 import { formatCurrency } from '../../../utils/formatCurrency'
-import { ErrorBoundary } from '../../../components/ui/ErrorBoundary'
+import ErrorBoundary from '../../../components/ui/ErrorBoundary'
 
 export default function CheckoutPaymentScreen() {
   const router = useRouter()

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Switch, StyleSheet } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import productService from '../../services/product.service'
-import SkeletonLoader from '../../components/ui/SkeletonLoader'
-import type { Product, ProductCategory } from '../../types/api'
+import { productService } from '../../services/product.service'
+import { SkeletonLoader } from '../../components/ui/SkeletonLoader'
+import type { Product, Category } from '../../types/api'
 
 const ORANGE = '#FF6B35'
 const BG = '#F5F5F5'
@@ -45,38 +45,51 @@ export default function ProductFormScreen() {
   const [form, setForm] = useState<FormData>(initialForm)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
-  const { data: categoriesData, isLoading: categoriesLoading } = useQuery<{ categories: ProductCategory[] }>({
+  const { data: categoriesData, isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => productService.getCategories(),
+    queryFn: () => productService.listCategories(),
   })
 
   const { data: product, isLoading: productLoading } = useQuery<Product>({
     queryKey: ['admin', 'product', id],
-    queryFn: () => productService.getProduct(id!),
+    queryFn: () => productService.getProduct(Number(id!)),
     enabled: isEdit,
   })
 
   useEffect(() => {
     if (isEdit && product) {
       setForm({
-        category_id: product.category_id || '',
-        name: product.name || '',
+        category_id: String(product.category_id || ''),
+        name: product.name_en || '',
         name_hi: product.name_hi || '',
-        description: product.description || '',
+        description: product.description_en || '',
         description_hi: product.description_hi || '',
         price: String(product.price || ''),
         unit: product.unit || 'piece',
         image_url: product.image_url || '',
-        stock: String(product.stock ?? 0),
+        stock: String(product.stock_qty ?? 0),
         is_active: product.is_active ?? true,
       })
     }
   }, [isEdit, product])
 
-  const categories = categoriesData?.categories ?? []
+  const categories = categoriesData ?? []
+
+  const mapFormToProduct = (data: FormData): Partial<Product> => ({
+    category_id: Number(data.category_id),
+    name_en: data.name,
+    name_hi: data.name_hi,
+    description_en: data.description,
+    description_hi: data.description_hi,
+    price: Number(data.price),
+    unit: data.unit,
+    image_url: data.image_url,
+    stock_qty: Number(data.stock),
+    is_active: data.is_active,
+  })
 
   const createMutation = useMutation({
-    mutationFn: (data: FormData) => productService.createProduct(data),
+    mutationFn: (data: FormData) => productService.createProduct(mapFormToProduct(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] })
       Alert.alert('Success', 'Product created successfully', [
@@ -89,7 +102,7 @@ export default function ProductFormScreen() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: (data: FormData) => productService.updateProduct(id!, data),
+    mutationFn: (data: FormData) => productService.updateProduct(Number(id!), mapFormToProduct(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'product', id] })
@@ -160,16 +173,16 @@ export default function ProductFormScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.label}>Category *</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryPicker}>
-          {categories.map((cat) => (
+          {categories.map((cat: Category) => (
             <TouchableOpacity
               key={cat.id}
-              style={[styles.categoryOption, form.category_id === cat.id && styles.categoryOptionSelected]}
-              onPress={() => updateField('category_id', cat.id)}
+              style={[styles.categoryOption, form.category_id === String(cat.id) && styles.categoryOptionSelected]}
+              onPress={() => updateField('category_id', String(cat.id))}
             >
               <Text
-                style={[styles.categoryOptionText, form.category_id === cat.id && styles.categoryOptionTextSelected]}
+                style={[styles.categoryOptionText, form.category_id === String(cat.id) && styles.categoryOptionTextSelected]}
               >
-                {cat.name}
+                {cat.name_en}
               </Text>
             </TouchableOpacity>
           ))}

@@ -1,12 +1,11 @@
 import { View, Text, ScrollView, ActivityIndicator, Alert, StyleSheet } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import orderService from '../../services/order.service'
+import { orderService } from '../../services/order.service'
 import StatusBadge from '../../components/admin/StatusBadge'
 import ActionButtons from '../../components/admin/ActionButtons'
-import SkeletonLoader from '../../components/ui/SkeletonLoader'
-import { formatCurrency } from '../../utils/formatCurrency'
-import { formatDate } from '../../utils/formatDate'
+import { SkeletonLoader } from '../../components/ui/SkeletonLoader'
+import { formatCurrency, formatDate } from '../../utils/formatCurrency'
 import type { Order, OrderStatus } from '../../types/api'
 
 const ORANGE = '#FF6B35'
@@ -20,12 +19,12 @@ export default function OrderDetailScreen() {
 
   const { data: order, isLoading, isError, refetch } = useQuery<Order>({
     queryKey: ['admin', 'order', id],
-    queryFn: () => orderService.getOrder(id!),
+    queryFn: () => orderService.getOrder(Number(id!)),
     enabled: !!id,
   })
 
   const statusMutation = useMutation({
-    mutationFn: (status: OrderStatus) => orderService.updateOrderStatus(id!, status),
+    mutationFn: (status: string) => orderService.updateOrderStatus(Number(id!), status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'order', id] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] })
@@ -36,7 +35,7 @@ export default function OrderDetailScreen() {
     },
   })
 
-  const handleStatusUpdate = (status: OrderStatus) => {
+  const handleStatusUpdate = (status: string) => {
     Alert.alert('Update Status', `Change order to ${status}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -99,21 +98,21 @@ export default function OrderDetailScreen() {
           ‹ Back
         </Text>
         <View style={styles.headerRow}>
-          <Text style={styles.orderId}>Order #{order.order_number || order.id.slice(0, 8)}</Text>
+          <Text style={styles.orderId}>Order #{String(order.id).slice(0, 8)}</Text>
           <StatusBadge status={order.status} />
         </View>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Customer</Text>
-          <Text style={styles.customerName}>{order.customer_name || order.customer?.name || 'N/A'}</Text>
-          <Text style={styles.customerPhone}>{order.customer_phone || order.customer?.phone || 'N/A'}</Text>
+          <Text style={styles.customerName}>N/A</Text>
+          <Text style={styles.customerPhone}>N/A</Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Delivery Address</Text>
           <Text style={styles.addressText}>
-            {order.delivery_address || order.address || 'No address provided'}
+            {order.address_text || 'No address provided'}
           </Text>
         </View>
 
@@ -160,24 +159,6 @@ export default function OrderDetailScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Timeline</Text>
-          {(order.timeline || []).length === 0 ? (
-            <Text style={styles.emptyText}>No timeline available</Text>
-          ) : (
-            (order.timeline || []).map((entry: any, index: number) => (
-              <View key={entry.id || index} style={styles.timelineRow}>
-                <View style={styles.timelineDot} />
-                {index < (order.timeline || []).length - 1 && <View style={styles.timelineLine} />}
-                <View style={styles.timelineContent}>
-                  <Text style={styles.timelineStatus}>
-                    {entry.status || entry.event}
-                  </Text>
-                  <Text style={styles.timelineDate}>
-                    {formatDate(entry.created_at || entry.timestamp)}
-                  </Text>
-                </View>
-              </View>
-            ))
-          )}
           <View style={styles.timelineRow}>
             <View style={styles.timelineDot} />
             <View style={styles.timelineContent}>
@@ -195,8 +176,8 @@ export default function OrderDetailScreen() {
           <ActivityIndicator size="small" color={ORANGE} />
         ) : (
           <ActionButtons
-            currentStatus={order.status}
-            onStatusChange={handleStatusUpdate}
+            status={order.status}
+            onAction={handleStatusUpdate}
           />
         )}
       </View>

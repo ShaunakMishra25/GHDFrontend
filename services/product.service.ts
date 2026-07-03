@@ -2,6 +2,11 @@ import { api, getPaginated } from './api';
 import { ApiResponse, Category, Product } from '../types/api';
 
 export const productService = {
+  async getCategory(id: number): Promise<Category> {
+    const { data } = await api.get<ApiResponse<Category>>(`/categories/${id}`);
+    return data.data;
+  },
+
   async listCategories(): Promise<Category[]> {
     const { data } = await api.get<ApiResponse<Category[]>>('/categories');
     return data.data;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, DimensionValue } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 
 export function ProductCardSkeleton() {
@@ -62,6 +62,45 @@ export function OrderCardSkeleton() {
             borderRadius={4}
           />
         </SkeletonPlaceholder.Item>
+      </SkeletonPlaceholder>
+    </View>
+  );
+}
+
+export function SkeletonLoader({
+  count,
+  width,
+  height,
+  borderRadius,
+  style,
+}: {
+  count?: number;
+  width?: DimensionValue;
+  height?: number;
+  borderRadius?: number;
+  style?: any;
+}) {
+  if (count) {
+    return (
+      <View>
+        {Array.from({ length: count }).map((_, i) => (
+          <View key={i} style={[{ marginBottom: 8 }, style]}>
+            <SkeletonPlaceholder>
+              <SkeletonPlaceholder.Item width="100%" height={60} borderRadius={8} />
+            </SkeletonPlaceholder>
+          </View>
+        ))}
+      </View>
+    );
+  }
+  return (
+    <View style={style}>
+      <SkeletonPlaceholder>
+        <SkeletonPlaceholder.Item
+          width={width || '100%'}
+          height={height || 60}
+          borderRadius={borderRadius || 8}
+        />
       </SkeletonPlaceholder>
     </View>
   );

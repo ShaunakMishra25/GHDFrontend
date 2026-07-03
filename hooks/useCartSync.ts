@@ -5,7 +5,7 @@ import { CartItem } from '../types/api';
 
 export function useCartSync() {
   const [isSyncing, setIsSyncing] = useState(false);
-  const { items, setItems } = useCartStore();
+  const { items } = useCartStore();
   const { clearCart } = useCartStore();
 
   const syncToServer = useCallback(async () => {

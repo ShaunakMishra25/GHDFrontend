@@ -1,14 +1,14 @@
 import { useState, useCallback, useMemo } from 'react'
-import { View, Text, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
-import orderService from '../../../services/order.service'
+import { orderService } from '../../../services/order.service'
 import OrderRow from '../../../components/admin/OrderRow'
 import EmptyState from '../../../components/ui/EmptyState'
-import SkeletonLoader from '../../../components/ui/SkeletonLoader'
-import useRefreshOnFocus from '../../../hooks/useRefreshOnFocus'
-import type { Order, OrderStatus } from '../../../types/api'
+import { SkeletonLoader } from '../../../components/ui/SkeletonLoader'
+import { useRefreshOnFocus } from '../../../hooks/useRefreshOnFocus'
+import type { Order, OrderBrief, OrderStatus } from '../../../types/api'
 
 const ORANGE = '#FF6B35'
 const BG = '#F5F5F5'
@@ -28,38 +28,45 @@ export default function OrdersScreen() {
   const router = useRouter()
   const [activeFilter, setActiveFilter] = useState<OrderStatus | 'all'>('all')
   const [refreshing, setRefreshing] = useState(false)
-  const [page, setPage] = useState(1)
-
-  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useQuery({
-      queryKey: ['admin', 'orders', activeFilter, page],
-      queryFn: () =>
-        orderService.getOrders({
-          status: activeFilter === 'all' ? undefined : activeFilter,
-          page,
-          limit: 20,
-        }),
-      keepPreviousData: true,
-    })
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['admin', 'orders', activeFilter],
+    queryFn: ({ pageParam = 0 }) =>
+      orderService.listOrders({
+        status: activeFilter === 'all' ? undefined : activeFilter,
+        offset: pageParam,
+        limit: 20,
+      }),
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.reduce((sum, p) => sum + p.data.length, 0)
+      return loadedCount < lastPage.total ? loadedCount : undefined
+    },
+    initialPageParam: 0,
+  })
 
   useRefreshOnFocus(refetch)
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    setPage(1)
     await refetch()
     setRefreshing(false)
   }, [refetch])
 
-  const orders: Order[] = data?.orders ?? []
+  const orders: OrderBrief[] = (data?.pages.flatMap((p) => p.data) ?? []) as unknown as OrderBrief[]
 
   const onFilterPress = useCallback((filter: OrderStatus | 'all') => {
     setActiveFilter(filter)
-    setPage(1)
   }, [])
 
   const onOrderPress = useCallback(
-    (order: Order) => {
+    (order: OrderBrief) => {
       router.push(`/(admin)/order-detail?id=${order.id}`)
     },
     [router],
@@ -67,9 +74,9 @@ export default function OrdersScreen() {
 
   const onEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
-      setPage((prev) => prev + 1)
+      fetchNextPage()
     }
-  }, [hasNextPage, isFetchingNextPage])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const renderFilterTab = useCallback(
     (filter: { label: string; value: OrderStatus | 'all' }) => {
@@ -145,14 +152,14 @@ export default function OrdersScreen() {
         data={orders}
         renderItem={({ item }) => (
           <TouchableOpacity activeOpacity={0.7} onPress={() => onOrderPress(item)}>
-            <OrderRow order={item} />
+            <OrderRow order={item} onStatusUpdate={() => {}} />
           </TouchableOpacity>
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         estimatedItemSize={80}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <EmptyState message="No orders found" />
+          <EmptyState icon="receipt-outline" title="No orders" message="No orders found" />
         }
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ORANGE} />

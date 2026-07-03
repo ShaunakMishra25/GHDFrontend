@@ -3,10 +3,10 @@ import { View, Text, TouchableOpacity, RefreshControl, StyleSheet } from 'react-
 import { useQuery } from '@tanstack/react-query'
 import { FlashList } from '@shopify/flash-list'
 import { orderService } from '../../../services/order.service'
-import { OrderCard } from '../../../components/customer/OrderCard'
-import { EmptyState } from '../../../components/ui/EmptyState'
+import OrderCard from '../../../components/customer/OrderCard'
+import EmptyState from '../../../components/ui/EmptyState'
 import { SkeletonLoader } from '../../../components/ui/SkeletonLoader'
-import { ErrorBoundary } from '../../../components/ui/ErrorBoundary'
+import ErrorBoundary from '../../../components/ui/ErrorBoundary'
 import { useRefreshOnFocus } from '../../../hooks/useRefreshOnFocus'
 import { Order, OrderStatus } from '../../../types/api'
 

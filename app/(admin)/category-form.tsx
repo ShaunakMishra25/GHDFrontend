@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Switch, StyleSheet } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import productService from '../../services/product.service'
-import SkeletonLoader from '../../components/ui/SkeletonLoader'
-import type { ProductCategory } from '../../types/api'
+import { productService } from '../../services/product.service'
+import { SkeletonLoader } from '../../components/ui/SkeletonLoader'
+import type { Category } from '../../types/api'
 
 const ORANGE = '#FF6B35'
 const BG = '#F5F5F5'
@@ -35,16 +35,16 @@ export default function CategoryFormScreen() {
   const [form, setForm] = useState<FormData>(initialForm)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
-  const { data: category, isLoading } = useQuery<ProductCategory>({
+  const { data: category, isLoading } = useQuery<Category>({
     queryKey: ['admin', 'category', id],
-    queryFn: () => productService.getCategory(id!),
+    queryFn: () => productService.getCategory(Number(id!)),
     enabled: isEdit,
   })
 
   useEffect(() => {
     if (isEdit && category) {
       setForm({
-        name: category.name || '',
+        name: category.name_en || '',
         name_hi: category.name_hi || '',
         image_url: category.image_url || '',
         sort_order: String(category.sort_order ?? 0),
@@ -53,8 +53,16 @@ export default function CategoryFormScreen() {
     }
   }, [isEdit, category])
 
+  const mapFormToCategory = (data: FormData): Partial<Category> => ({
+    name_en: data.name,
+    name_hi: data.name_hi,
+    image_url: data.image_url,
+    sort_order: Number(data.sort_order),
+    is_active: data.is_active,
+  })
+
   const createMutation = useMutation({
-    mutationFn: (data: FormData) => productService.createCategory(data),
+    mutationFn: (data: FormData) => productService.createCategory(mapFormToCategory(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       Alert.alert('Success', 'Category created successfully', [
@@ -67,7 +75,7 @@ export default function CategoryFormScreen() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: (data: FormData) => productService.updateCategory(id!, data),
+    mutationFn: (data: FormData) => productService.updateCategory(Number(id!), mapFormToCategory(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'category', id] })

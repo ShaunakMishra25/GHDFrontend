@@ -4,11 +4,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { FlashList } from '@shopify/flash-list'
 import { productService } from '../../../services/product.service'
-import { ProductCard } from '../../../components/customer/ProductCard'
-import { CategoryCard } from '../../../components/customer/CategoryCard'
+import ProductCard from '../../../components/customer/ProductCard'
+import CategoryCard from '../../../components/customer/CategoryCard'
 import { SkeletonLoader } from '../../../components/ui/SkeletonLoader'
-import { EmptyState } from '../../../components/ui/EmptyState'
-import { ErrorBoundary } from '../../../components/ui/ErrorBoundary'
+import EmptyState from '../../../components/ui/EmptyState'
+import ErrorBoundary from '../../../components/ui/ErrorBoundary'
 import { useNetworkStatus } from '../../../hooks/useNetworkStatus'
 import { useRefreshOnFocus } from '../../../hooks/useRefreshOnFocus'
 import { Category, Product } from '../../../types/api'
@@ -43,7 +43,7 @@ export default function CatalogScreen() {
   if (selectedCategory) queryParams.category_id = selectedCategory
   if (searchText.trim()) queryParams.search = searchText.trim()
 
-  const { data, isLoading, isFetching, refetch } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery<{ data: Product[]; total: number }>({
     queryKey: ['products', queryParams],
     queryFn: () => productService.listProducts(queryParams),
     staleTime: 5 * 60 * 1000,
@@ -58,7 +58,7 @@ export default function CatalogScreen() {
       } else {
         setAccumulatedProducts((prev) => {
           const existingIds = new Set(prev.map((p) => p.id))
-          const newItems = data.data.filter((p) => !existingIds.has(p.id))
+          const newItems = data.data.filter((p: Product) => !existingIds.has(p.id))
           return [...prev, ...newItems]
         })
       }
@@ -157,7 +157,7 @@ export default function CatalogScreen() {
           data={displayProducts}
           renderItem={({ item }) => (
             <View style={styles.cardWrapper}>
-              <ProductCard product={item} onPress={() => {}} />
+              <ProductCard product={item} onAddToCart={() => {}} />
             </View>
           )}
           keyExtractor={(item: Product) => String(item.id)}
