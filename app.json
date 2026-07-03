@@ -18,8 +18,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#FF6B35"
       },
-      "package": "com.gumla.homedelivery",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.gumla.homedelivery"
     },
     "plugins": [
       "expo-router",
