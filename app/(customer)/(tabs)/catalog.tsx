@@ -118,7 +118,6 @@ export default function CatalogScreen() {
       )}
       horizontal
       showsHorizontalScrollIndicator={false}
-      estimatedItemSize={80}
       keyExtractor={(item: any) => String(item.id || 'all')}
       contentContainerStyle={styles.filterList}
     />
@@ -162,7 +161,6 @@ export default function CatalogScreen() {
           )}
           keyExtractor={(item: Product) => String(item.id)}
           numColumns={2}
-          estimatedItemSize={260}
           ListHeaderComponent={
             <View>
               <View style={styles.searchRow}>

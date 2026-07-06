@@ -179,7 +179,6 @@ export default function ProductsScreen() {
           keyExtractor={(item) => String(item.id)}
           horizontal
           showsHorizontalScrollIndicator={false}
-          estimatedItemSize={80}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         />
       </View>
@@ -211,7 +210,6 @@ export default function ProductsScreen() {
           </TouchableOpacity>
         )}
         keyExtractor={(item) => String(item.id)}
-        estimatedItemSize={80}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <EmptyState icon="package-outline" title={search ? 'No results' : 'No products'} message={search ? 'No products match your search' : 'No products yet'} />

@@ -144,7 +144,6 @@ export default function OrdersScreen() {
           keyExtractor={(item) => item.value}
           horizontal
           showsHorizontalScrollIndicator={false}
-          estimatedItemSize={80}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         />
       </View>
@@ -156,7 +155,6 @@ export default function OrdersScreen() {
           </TouchableOpacity>
         )}
         keyExtractor={(item) => String(item.id)}
-        estimatedItemSize={80}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <EmptyState icon="receipt-outline" title="No orders" message="No orders found" />

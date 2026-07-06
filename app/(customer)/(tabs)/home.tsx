@@ -80,7 +80,6 @@ export default function HomeScreen() {
           )}
           horizontal
           showsHorizontalScrollIndicator={false}
-          estimatedItemSize={100}
           keyExtractor={(item: Category) => String(item.id)}
           contentContainerStyle={styles.categoriesList}
         />
@@ -117,7 +116,6 @@ export default function HomeScreen() {
           )}
           keyExtractor={(item: Product) => String(item.id)}
           numColumns={2}
-          estimatedItemSize={260}
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={
             <View style={styles.emptyState}>

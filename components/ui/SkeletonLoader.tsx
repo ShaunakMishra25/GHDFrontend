@@ -1,40 +1,49 @@
-import React from 'react';
-import { View, StyleSheet, DimensionValue } from 'react-native';
-import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
+import React, { useEffect, useRef } from 'react';
+import { View, Animated, StyleSheet, DimensionValue } from 'react-native';
+
+function Shimmer({ style }: { style?: any }) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim]);
+
+  const opacity = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.7],
+  });
+
+  return <Animated.View style={[styles.shimmer, { opacity }, style]} />;
+}
 
 export function ProductCardSkeleton() {
   return (
     <View style={styles.productCard}>
-      <SkeletonPlaceholder>
-        <SkeletonPlaceholder.Item>
-          <SkeletonPlaceholder.Item
-            width="100%"
-            height={140}
-            borderRadius={8}
-          />
-          <SkeletonPlaceholder.Item marginTop={12}>
-            <SkeletonPlaceholder.Item
-              width="60%"
-              height={14}
-              borderRadius={4}
-            />
-          </SkeletonPlaceholder.Item>
-          <SkeletonPlaceholder.Item marginTop={8}>
-            <SkeletonPlaceholder.Item
-              width="40%"
-              height={16}
-              borderRadius={4}
-            />
-          </SkeletonPlaceholder.Item>
-          <SkeletonPlaceholder.Item marginTop={8}>
-            <SkeletonPlaceholder.Item
-              width="30%"
-              height={12}
-              borderRadius={4}
-            />
-          </SkeletonPlaceholder.Item>
-        </SkeletonPlaceholder.Item>
-      </SkeletonPlaceholder>
+      <Shimmer style={{ width: '100%', height: 140, borderRadius: 8 }} />
+      <View style={{ marginTop: 12 }}>
+        <Shimmer style={{ width: '60%', height: 14, borderRadius: 4 }} />
+      </View>
+      <View style={{ marginTop: 8 }}>
+        <Shimmer style={{ width: '40%', height: 16, borderRadius: 4 }} />
+      </View>
+      <View style={{ marginTop: 8 }}>
+        <Shimmer style={{ width: '30%', height: 12, borderRadius: 4 }} />
+      </View>
     </View>
   );
 }
@@ -42,27 +51,13 @@ export function ProductCardSkeleton() {
 export function OrderCardSkeleton() {
   return (
     <View style={styles.orderCard}>
-      <SkeletonPlaceholder>
-        <SkeletonPlaceholder.Item>
-          <SkeletonPlaceholder.Item
-            width="50%"
-            height={16}
-            borderRadius={4}
-          />
-          <SkeletonPlaceholder.Item
-            marginTop={12}
-            width="30%"
-            height={14}
-            borderRadius={4}
-          />
-          <SkeletonPlaceholder.Item
-            marginTop={8}
-            width="40%"
-            height={14}
-            borderRadius={4}
-          />
-        </SkeletonPlaceholder.Item>
-      </SkeletonPlaceholder>
+      <Shimmer style={{ width: '50%', height: 16, borderRadius: 4 }} />
+      <View style={{ marginTop: 12 }}>
+        <Shimmer style={{ width: '30%', height: 14, borderRadius: 4 }} />
+      </View>
+      <View style={{ marginTop: 8 }}>
+        <Shimmer style={{ width: '40%', height: 14, borderRadius: 4 }} />
+      </View>
     </View>
   );
 }
@@ -70,8 +65,8 @@ export function OrderCardSkeleton() {
 export function SkeletonLoader({
   count,
   width,
-  height,
-  borderRadius,
+  height = 60,
+  borderRadius = 8,
   style,
 }: {
   count?: number;
@@ -85,9 +80,7 @@ export function SkeletonLoader({
       <View>
         {Array.from({ length: count }).map((_, i) => (
           <View key={i} style={[{ marginBottom: 8 }, style]}>
-            <SkeletonPlaceholder>
-              <SkeletonPlaceholder.Item width="100%" height={60} borderRadius={8} />
-            </SkeletonPlaceholder>
+            <Shimmer style={{ width: '100%', height, borderRadius }} />
           </View>
         ))}
       </View>
@@ -95,18 +88,15 @@ export function SkeletonLoader({
   }
   return (
     <View style={style}>
-      <SkeletonPlaceholder>
-        <SkeletonPlaceholder.Item
-          width={width || '100%'}
-          height={height || 60}
-          borderRadius={borderRadius || 8}
-        />
-      </SkeletonPlaceholder>
+      <Shimmer style={{ width: width || '100%', height, borderRadius }} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  shimmer: {
+    backgroundColor: '#E1E9EE',
+  },
   productCard: {
     backgroundColor: '#fff',
     borderRadius: 12,

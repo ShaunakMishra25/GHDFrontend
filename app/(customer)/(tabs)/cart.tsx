@@ -72,7 +72,6 @@ export default function CartScreen() {
             />
           )}
           keyExtractor={(item) => String(item.product_id)}
-          estimatedItemSize={100}
           contentContainerStyle={styles.listContent}
         />
 

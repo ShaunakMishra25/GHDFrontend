@@ -90,7 +90,6 @@ export default function OrdersScreen() {
           data={orders}
           renderItem={({ item }) => <OrderCard order={item} onPress={() => {}} />}
           keyExtractor={(item: Order) => String(item.id)}
-          estimatedItemSize={140}
           ListHeaderComponent={
             <View style={styles.tabRow}>
               {STATUS_TABS.map((tab) => (
